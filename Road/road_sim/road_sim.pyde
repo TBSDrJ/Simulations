@@ -32,8 +32,8 @@ def draw():
         cars.append(generate_new_car())
         my_str = str(len(cars))
         for car in cars:
-            my_str += "\t" + str(car.x)
-        print(my_str)
+            my_str += "\t" + str(car.lane) + "," + str(int(car.x))
+        # print(my_str)
 
 class Road:
     def __init__(self):
@@ -109,10 +109,11 @@ class Car(object):
         else:
             self.color = color(45, 195, 45)
             self.speed = self.previous_speed
+        return near
     
     def adjust(self, near_car_index):
         if near_car_index == -1:
-            self.speed = 0
+            self.speed = me.speed
         else:
             self.speed = cars[near_car_index].speed
     
@@ -145,13 +146,36 @@ def generate_new_car():
             x = -100
         elif speed < 0:
             x = WIDTH + 100
-    lane = randrange(0, lanes)
+    if speed < 0:
+        # Make it more likely that slower cars are to the right
+        lane_tmp = randrange(0, lanes * lanes)
+        lane = lanes - 1
+        diff = 1
+        lane_tmp -= diff
+        while lane_tmp >= 0:
+            diff += 2
+            lane_tmp -= diff
+            lane -= 1
+    elif speed > 0:
+        # Make it more likely that faster cars are to the left
+        lane_tmp = randrange(0, lanes * lanes)
+        lane = 0
+        diff = 1
+        lane_tmp -= diff
+        while lane_tmp >= 0:
+            diff += 2
+            lane_tmp -= diff
+            lane += 1
+    else:
+        lane = randrange(0, lanes)
     collision = True
     while collision:
         collision = False
+        cars.append(me)
         for car in cars:
-            if lane == car.lane and abs(x - car.x) < 100:
+            if lane == car.lane and abs(x - car.x) < NEAR_TEST:
                 collision = True
+                print(lane, x, car.x)
         if collision:
             n = randrange(0,4)
             if n == 0 and lane < lanes - 1:
@@ -159,9 +183,10 @@ def generate_new_car():
             elif n == 1 and lane > 0:
                 lane -= 1
             elif n == 2:
-                x += 100
+                x += NEAR_TEST
             else:
-                x -= 100
+                x -= NEAR_TEST
+        cars.pop(-1)
     return OtherCar(lane, x, speed)
         
 def purge_cars():
