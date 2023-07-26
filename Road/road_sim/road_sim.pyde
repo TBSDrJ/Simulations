@@ -181,9 +181,9 @@ def generate_new_car():
         if speed == 0:
             adj = randrange(0,2)
             if adj == 0:
-                speed = 0.95
+                speed = -0.05
             else:
-                speed = 1.05
+                speed = 0.05
         if speed > 0:
             x = -100
         elif speed < 0:
