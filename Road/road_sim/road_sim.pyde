@@ -1,6 +1,6 @@
 from random import randrange
 
-NEAR_TEST = 160
+NEAR_TEST = 240
 WIDTH = 1200
 
 lanes = 3
@@ -24,6 +24,7 @@ def draw():
     road.draw_road()
     me.draw_car()
     me.check_near()
+    me.check_speeds()
     for car in cars:
         car.draw_car()
         car.check_near()
@@ -84,7 +85,8 @@ class Car(object):
                 self.changing_lanes = False
                 self.changing_lanes_dir = 0
                 self.lane = int(round(self.lane))
-                print("Done changing lanes")
+                self.speed = self.previous_speed
+                # print("Done changing lanes")
         
     def change_lanes(self, dir):
         self.changing_lanes = True
@@ -112,17 +114,43 @@ class Car(object):
         return near
     
     def adjust(self, near_car_index):
+        cars.append(me)
+        blocked = False
+        for car in cars:
+            if car != self:
+                if car.lane == self.lane + 1 and abs(car.x - self.x) < NEAR_TEST:
+                    blocked = True
+        if not blocked and self.lane < lanes - 1:
+            # print("Changing Lanes")
+            self.change_lanes(1)
         if near_car_index == -1:
             self.speed = me.speed
         else:
             self.speed = cars[near_car_index].speed
+        cars.pop(-1)
     
 class MyCar(Car):
     def __init__(self, lane):
         self.color = color(45, 195, 45)
         self.x = 450
         self.speed = 0
+        self.subtracted = 0
         super(MyCar, self).__init__(lane)
+        
+    def check_speeds(self):
+        if self.speed > 0:
+            print("Correcting slow Me", self.speed)
+            self.subtracted = self.speed
+            for car in cars:
+                if car != self:
+                    car.speed -= self.subtracted
+            self.speed = 0
+        elif self.subtracted > 0 and not self.changing_lanes and not self.check_near():
+            print("Going back to speed 0")
+            for car in cars:
+                if car != self:
+                    car.speed += self.subtracted
+            self.subtracted = 0
 
 class OtherCar(Car):
     def __init__(self, lane, x, speed):
@@ -175,7 +203,7 @@ def generate_new_car():
         for car in cars:
             if lane == car.lane and abs(x - car.x) < NEAR_TEST:
                 collision = True
-                print(lane, x, car.x)
+                # print(lane, x, car.x)
         if collision:
             n = randrange(0,4)
             if n == 0 and lane < lanes - 1:
