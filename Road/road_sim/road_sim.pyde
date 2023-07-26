@@ -28,7 +28,7 @@ def draw():
         car.draw_car()
         car.check_near()
     purge_cars()
-    if frames % 80 == 0:
+    if frames % 160 == 0:
         cars.append(generate_new_car())
         my_str = str(len(cars))
         for car in cars:
@@ -71,6 +71,7 @@ class Car(object):
         self.changing_lanes_dir = 0
         self.lane = lane
         self.previous_speed = self.speed
+        self.changed_lanes_frame = 0
 
     def draw_car(self):
         self.x += self.speed * 10
@@ -85,6 +86,7 @@ class Car(object):
                 self.changing_lanes_dir = 0
                 self.lane = int(round(self.lane))
                 self.speed = self.previous_speed
+                self.changed_lanes_frame = frames
                 # print("Done changing lanes")
         
     def change_lanes(self, dir):
@@ -104,6 +106,7 @@ class Car(object):
                 near_car_index = -1
         if not self.changing_lanes:
             blocked_right = False
+            cars.append(me)
             for car in cars:
                 if car != self:
                     if car.lane == self.lane - 1 and abs(car.x - self.x) < NEAR_TEST:
@@ -111,7 +114,9 @@ class Car(object):
                     if car.changing_lanes and abs(car.x - self.x) < NEAR_TEST:
                         blocked_right = True
             if not blocked_right and self.lane > 0 and not self.changing_lanes:
-                self.change_lanes(-1)
+                if frames > self.changed_lanes_frame + 20:
+                    self.change_lanes(-1)
+            cars.pop(-1)
         if near:
             self.color = color(195, 45, 45)
             self.adjust(near_car_index)
@@ -132,7 +137,8 @@ class Car(object):
                 if car.changing_lanes and abs(car.x - self.x) < NEAR_TEST:
                     blocked_left = True                    
         if not blocked_left and self.lane < lanes - 1 and not self.changing_lanes:
-            self.change_lanes(1)
+            if frames > self.changed_lanes_frame + 20:
+                self.change_lanes(1)
         if near_car_index == -1:
             self.speed = me.speed
         else:
