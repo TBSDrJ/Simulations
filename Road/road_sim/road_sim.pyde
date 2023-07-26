@@ -8,7 +8,6 @@ frames = 0
 dir = 0
 cars = []
 
-
 def setup():
     size(WIDTH, 100*lanes + 30)
     global me, cars
@@ -103,6 +102,16 @@ class Car(object):
             if self.lane == me.lane and self.x - me.x < NEAR_TEST and self.x - me.x > 0:
                 near = True
                 near_car_index = -1
+        if not self.changing_lanes:
+            blocked_right = False
+            for car in cars:
+                if car != self:
+                    if car.lane == self.lane - 1 and abs(car.x - self.x) < NEAR_TEST:
+                        blocked_right = True
+                    if car.changing_lanes and abs(car.x - self.x) < NEAR_TEST:
+                        blocked_right = True
+            if not blocked_right and self.lane > 0 and not self.changing_lanes:
+                self.change_lanes(-1)
         if near:
             self.color = color(195, 45, 45)
             self.adjust(near_car_index)
@@ -115,13 +124,14 @@ class Car(object):
     
     def adjust(self, near_car_index):
         cars.append(me)
-        blocked = False
+        blocked_left = False
         for car in cars:
             if car != self:
                 if car.lane == self.lane + 1 and abs(car.x - self.x) < NEAR_TEST:
-                    blocked = True
-        if not blocked and self.lane < lanes - 1:
-            # print("Changing Lanes")
+                    blocked_left = True
+                if car.changing_lanes and abs(car.x - self.x) < NEAR_TEST:
+                    blocked_left = True                    
+        if not blocked_left and self.lane < lanes - 1 and not self.changing_lanes:
             self.change_lanes(1)
         if near_car_index == -1:
             self.speed = me.speed
@@ -139,14 +149,12 @@ class MyCar(Car):
         
     def check_speeds(self):
         if self.speed > 0:
-            print("Correcting slow Me", self.speed)
             self.subtracted = self.speed
             for car in cars:
                 if car != self:
                     car.speed -= self.subtracted
             self.speed = 0
         elif self.subtracted > 0 and not self.changing_lanes and not self.check_near():
-            print("Going back to speed 0")
             for car in cars:
                 if car != self:
                     car.speed += self.subtracted
@@ -221,7 +229,7 @@ def purge_cars():
     global cars
     to_purge = []
     for i, car in enumerate(cars):
-        if car.x > WIDTH + 150 or car.x < -150:
+        if car.x > WIDTH + 1000 or car.x < -1000:
             to_purge.append(i)
     for i in to_purge:
         cars.pop(i)
